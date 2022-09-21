@@ -1,0 +1,23 @@
+version: 1
+
+dn: dc=org
+objectClass: extensibleObject
+objectClass: domain
+objectClass: top
+dc: org
+
+dn: dc=ssokerberos,dc=org
+objectClass: extensibleObject
+objectClass: domain
+objectClass: top
+dc: ssokerberos
+
+dn: ou=Users,dc=ssokerberos,dc=org
+objectClass: organizationalUnit
+objectClass: top
+ou: Users
+
+dn: ou=Groups,dc=ssokerberos,dc=org
+objectClass: organizationalUnit
+objectClass: top
+ou: Groups
