@@ -1,0 +1,67 @@
+FROM openjdk:11-jre-slim
+MAINTAINER ssokerberos@kerbrose.org
+
+#############################################
+# ApacheDS installation
+#############################################
+
+ENV APACHEDS_VERSION 2.0.0.AM26
+ENV APACHEDS_ARCH amd64
+
+ENV APACHEDS_ARCHIVE apacheds-${APACHEDS_VERSION}-${APACHEDS_ARCH}.deb
+ENV APACHEDS_DATA /var/lib/apacheds
+ENV APACHEDS_USER apacheds
+ENV APACHEDS_GROUP apacheds
+
+RUN ln -s ${APACHEDS_DATA}-${APACHEDS_VERSION} ${APACHEDS_DATA}
+VOLUME ${APACHEDS_DATA}
+
+RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections \
+	&& apt-get update \
+    && apt-get install -y \
+       ldap-utils \
+       procps \
+       curl \
+       jq \
+    && curl https://downloads.apache.org/directory/apacheds/dist/${APACHEDS_VERSION}/${APACHEDS_ARCHIVE} > ${APACHEDS_ARCHIVE} \
+    && dpkg -i ${APACHEDS_ARCHIVE} \
+    && rm ${APACHEDS_ARCHIVE} \
+    && apt-get autoremove
+
+
+EXPOSE 10389 10636 60088 60464 8080
+
+#############################################
+# ApacheDS bootstrap configuration
+#############################################
+
+ENV APACHEDS_INSTANCE default
+ENV APACHEDS_BOOTSTRAP /bootstrap
+
+ADD run.sh /run.sh
+RUN chown ${APACHEDS_USER}:${APACHEDS_GROUP} /run.sh \
+    && chmod u+rx /run.sh
+
+ADD instance/krb5.conf /etc/
+ADD instance/* ${APACHEDS_BOOTSTRAP}/conf/
+RUN sed -i "s/ads-contextentry:: [A-Za-z0-9\+\=\/]*/ads-contextentry:: $(base64 -w 0 $APACHEDS_BOOTSTRAP/conf/ads-contextentry.decoded)/g" /$APACHEDS_BOOTSTRAP/conf/config.ldif
+ADD ome.ldif ${APACHEDS_BOOTSTRAP}/
+RUN mkdir ${APACHEDS_BOOTSTRAP}/cache \
+    && mkdir ${APACHEDS_BOOTSTRAP}/run \
+    && mkdir ${APACHEDS_BOOTSTRAP}/log \
+    && mkdir ${APACHEDS_BOOTSTRAP}/partitions \
+    && chown -R ${APACHEDS_USER}:${APACHEDS_GROUP} ${APACHEDS_BOOTSTRAP}
+
+RUN apt -y install python3-ldap3
+
+#############################################
+# ApacheDS wrapper command
+#############################################
+
+# Correct for hard-coded INSTANCES_DIRECTORY variable
+RUN sed -i "s#/var/lib/apacheds-${APACHEDS_VERSION}#/var/lib/apacheds#" /opt/apacheds-${APACHEDS_VERSION}/bin/apacheds
+
+ENTRYPOINT ["/run.sh"]
+
+
+

@@ -1,0 +1,54 @@
+version: 1
+
+dn: dc=security,dc=ssokerberos,dc=org
+objectClass: top
+objectClass: domain
+dc: security
+
+dn: ou=users,dc=security,dc=ssokerberos,dc=org
+objectClass: organizationalUnit
+objectClass: top
+ou: users
+
+dn: ou=services,dc=security,dc=ssokerberos,dc=org
+objectClass: organizationalUnit
+objectClass: top
+ou: service
+
+dn: uid=vijay.kumar,ou=users,dc=security,dc=ssokerberos,dc=org
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+objectClass: krb5principal
+objectClass: krb5kdcentry
+objectClass: top
+uid: vijay.kumar
+userPassword: nile@123
+krb5PrincipalName: vijay.kumar@SSOKERBEROS.ORG
+krb5KeyVersionNumber: 0
+cn: vijay kumar
+sn: vijay.kumar
+
+dn: uid=ldap,ou=services,dc=security,dc=ssokerberos,dc=org
+objectClass: top
+objectClass: organizationalUnit
+objectClass: krb5KDCEntry
+objectClass: uidObject
+objectClass: krb5Principal
+krb5KeyVersionNumber: 0
+krb5PrincipalName: ldap/ssokerberos.org@SSOKERBEROS.ORG
+uid: ldap
+userPassword: randomKey
+ou: TGT
+
+dn: uid=krbtgt,ou=services,dc=security,dc=ssokerberos,dc=org
+objectClass: top
+objectClass: organizationalUnit
+objectClass: krb5KDCEntry
+objectClass: uidObject
+objectClass: krb5Principal
+krb5KeyVersionNumber: 0
+krb5PrincipalName: krbtgt/SSOKERBEROS.ORG@SSOKERBEROS.ORG
+uid: krbtgt
+userPassword:: randomkey
+ou: LDAP

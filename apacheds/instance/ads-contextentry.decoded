@@ -1,0 +1,4 @@
+dn: dc=ssokerberos,dc=org
+dc: ssokerberos
+objectclass: domain
+objectclass: top
