@@ -29,6 +29,34 @@ krb5KeyVersionNumber: 0
 cn: vijay kumar
 sn: vijay.kumar
 
+dn: uid=kadmin,ou=users,dc=security,dc=ssokerberos,dc=org
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+objectClass: krb5principal
+objectClass: krb5kdcentry
+objectClass: top
+uid: vijay.kumar
+userPassword: nile@123
+krb5PrincipalName: admin/kdadmin@SSOKERBEROS.ORG
+krb5KeyVersionNumber: 0
+cn: vijay kumar
+sn: vijay.kumar
+
+dn: uid=vijayk,ou=users,dc=security,dc=ssokerberos,dc=org
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+objectClass: krb5principal
+objectClass: krb5kdcentry
+objectClass: top
+uid: vijayk
+userPassword: nile@123
+krb5PrincipalName: vijayk@SSOKERBEROS.ORG
+krb5KeyVersionNumber: 0
+cn: vijayk
+sn: vijayk
+
 dn: uid=ldap,ou=services,dc=security,dc=ssokerberos,dc=org
 objectClass: top
 objectClass: organizationalUnit
@@ -37,6 +65,18 @@ objectClass: uidObject
 objectClass: krb5Principal
 krb5KeyVersionNumber: 0
 krb5PrincipalName: ldap/ssokerberos.org@SSOKERBEROS.ORG
+uid: ldap
+userPassword: randomKey
+ou: TGT
+
+dn: uid=kadmin,ou=services,dc=security,dc=ssokerberos,dc=org
+objectClass: top
+objectClass: organizationalUnit
+objectClass: krb5KDCEntry
+objectClass: uidObject
+objectClass: krb5Principal
+krb5KeyVersionNumber: 0
+krb5PrincipalName: kadmin/localhost@SSOKERBEROS.ORG
 uid: ldap
 userPassword: randomKey
 ou: TGT
