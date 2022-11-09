@@ -1,41 +1,60 @@
 #!/bin/bash
 
-# Environment variables:
-# APACHEDS_VERSION
-# APACHEDS_INSTANCE
-# APACHEDS_BOOTSTRAP
-# APACHEDS_DATA
-# APACHEDS_USER
-# APACHEDS_GROUP
+APACHEDS_INSTANCE=/var/lib/apacheds-2.0.0.AM26/default
 
-APACHEDS_INSTANCE_DIRECTORY=${APACHEDS_DATA}/${APACHEDS_INSTANCE}
-PIDFILE="${APACHEDS_INSTANCE_DIRECTORY}/run/apacheds-${APACHEDS_INSTANCE}.pid"
+function wait_for_ldap {
+	echo "Waiting for LDAP to be available "
+	c=0
 
-# When a fresh data folder is detected then bootstrap the instance configuration.
-if [ ! -d ${APACHEDS_INSTANCE_DIRECTORY} ]; then
-    mkdir ${APACHEDS_INSTANCE_DIRECTORY}
-    cp -rv ${APACHEDS_BOOTSTRAP}/* ${APACHEDS_INSTANCE_DIRECTORY}
-    chown -v -R ${APACHEDS_USER}:${APACHEDS_GROUP} ${APACHEDS_INSTANCE_DIRECTORY}
+    ldapsearch -h localhost -p 10389 -D 'uid=admin,ou=system' -w secret ou=system;
+    
+    while [ $? -ne 0 ]; do
+        echo "LDAP not up yet... retrying... ($c/20)"
+        sleep 4
+ 		
+ 		if [ $c -eq 20 ]; then
+ 			echo "TROUBLE!!! After [${c}] retries LDAP is still dead :("
+ 			exit 2
+ 		fi
+ 		c=$((c+1))
+    	
+    	ldapsearch -h localhost -p 10389 -D 'uid=admin,ou=system' -w secret ou=system;
+    done 
+}
+
+if [ -f /bootstrap/config.ldif ] && [ ! -f ${APACHEDS_INSTANCE}/conf/config.ldif_migrated ]; then
+	echo "Using config file from /bootstrap/config.ldif"
+	rm -rf ${APACHEDS_INSTANCE}/conf/config.ldif
+
+	cp /bootstrap/config.ldif ${APACHEDS_INSTANCE}/conf/
+	chown apacheds.apacheds ${APACHEDS_INSTANCE}/conf/config.ldif
 fi
 
-cleanup(){
-    if [ -e "${PIDFILE}" ];
-    then
-        echo "Cleaning up ${PIDFILE}"
-        rm "${PIDFILE}"
-    fi
-}
+if [ -d /bootstrap/schema ]; then
+	echo "Using schema from /bootstrap/schema directory"
+	rm -rf ${APACHEDS_INSTANCE}/partitions/schema 
 
-trap cleanup EXIT
-cleanup
+	cp -R /bootstrap/schema/ ${APACHEDS_INSTANCE}/partitions/
+	chown -R apacheds.apacheds ${APACHEDS_INSTANCE}/partitions/
+fi
 
-/opt/apacheds-${APACHEDS_VERSION}/bin/apacheds start ${APACHEDS_INSTANCE}
-sleep 2  # Wait on new pid
+# There should be no correct scenario in which the pid file is present at container start
+rm -f ${APACHEDS_INSTANCE}/run/apacheds-default.pid 
 
-shutdown(){
-    echo "Shutting down..."
-    /opt/apacheds-${APACHEDS_VERSION}/bin/apacheds stop ${APACHEDS_INSTANCE}
-}
+/opt/apacheds-2.0.0.AM26/bin/apacheds start default
 
-trap shutdown INT TERM
-tail -n 0 --pid=$(cat $PIDFILE) -f ${APACHEDS_INSTANCE_DIRECTORY}/log/apacheds.log
+wait_for_ldap
+
+
+if [ -n "${BOOTSTRAP_FILE}" ]; then
+	echo "Bootstraping Apache DS with Data from ${BOOTSTRAP_FILE}"
+	
+	ldapmodify -h localhost -p 10389 -D 'uid=admin,ou=system' -w secret -f $BOOTSTRAP_FILE
+fi
+
+trap "echo 'Stopping Apache DS';/opt/apacheds-2.0.0.AM26/bin/apacheds stop default;exit 0" SIGTERM SIGKILL
+
+while true
+do
+  tail -f $APACHEDS_INSTANCE/log/apacheds.log & wait ${!}
+done
